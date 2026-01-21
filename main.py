@@ -8,8 +8,8 @@ matplotlib.use("TkAgg")
 L1=L2=0.5
 L_SCALE=5
 LL_SCALE=1.05
-PORT_XY="COM5"
-PORT_Z ="COM10"
+PORT_XY="COM5" # 左右方向
+PORT_Z ="COM10" # 上下＋グリッパー
 
 # ---- IK（両解＋連続選択） ----
 prev_t1, prev_t2 = None, None
@@ -165,11 +165,6 @@ path=[(0.5,-0.5,0,False,False),
       (0.5+0.5*math.sin(math.radians(20)),-0.5*math.cos(math.radians(20)),-8.7,True,False),#1番をつかむ
 
       (0.5,-0.5,0,False,True)]
-# path=[(0.5,-0.5,0,False,False),
-#       (1.0,0.0,-8.7,True,False),
-#       (0.5,-0.5,0,False,True)]
-# path=[(0.5,-0.5,-8.7,True,True),(1.0,0.0,-8.7,True,False),(0.5,-0.5,0,True,True),(0.5,-0.5,-8.7,False,False)]
-open_grip()
 
 for x,y,z,is_grip,is_z_xy in path:
     t1,t2=ik(x,y)
