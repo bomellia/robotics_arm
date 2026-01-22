@@ -9,26 +9,29 @@ class RobotArm:
     
     # ---- クラス定数 ----
     L1 = L2 = 0.5
-    L_SCALE = 5
+    L1_SCALE = 5.1
+    L2_SCALE = L1_SCALE*(4.75/5)
     LL_SCALE = 1.05
     
     # ---- プリセット位置 ----
     POSITIONS = {
         'home': (-90, 90, 0),
         'pos_1': (-70, 70, 0),
-        'pos_2': (-30, 30, 0),
+        'pos_2': (-35, 35, 0),
         'pos_3': (0, 0, 0),
-        'pos_4': (30, -30, 0),
+        'pos_4': (35, -35, 0),
         'pos_5': (70, -70, 0),
+        'feeder': (-90, 0, 0),
     }
     
     POSITIONS_GRAB = {
         'home': (-90, 90, -8.7),
         'pos_1': (-70, 70, -8.7),
-        'pos_2': (-30, 30, -8.7),
+        'pos_2': (-35, 35, -8.7),
         'pos_3': (0, 0, -8.7),
-        'pos_4': (30, -30, -8.7),
+        'pos_4': (35, -35, -8.7),
         'pos_5': (70, -70, -8.7),
+        'feeder': (-90, 0, -8.7),
     }
     
     def __init__(self, port_xy="COM5", port_z="COM10"):
@@ -183,6 +186,19 @@ class RobotArm:
         if self.ser_z:
             self.ser_z.write(f"Z,{z:.3f},0\n".encode())
     
+    def set_t1_speed(self, speed):
+        if self.ser_xy:
+            self.ser_xy.write(f"S1,{speed}\n".encode())
+            
+    def set_t2_speed(self, speed):
+        if self.ser_xy:
+            self.ser_xy.write(f"S2,{speed}\n".encode())
+
+    def set_z_speed(self, speed):
+        if self.ser_z:
+            self.ser_z.write(f"Sz,{speed}\n".encode())
+            
+    
     def close_grip(self):
         """グリップを閉じる"""
         if self.ser_z:
@@ -231,7 +247,7 @@ class RobotArm:
     
     # ---- 制御メソッド ----
     def set_pose(self, t1, t2, z, draw=True, send_xy=True, send_z_signal=True, 
-                 is_z_xy=True, wait_xy=1.5, wait_z=2.0):
+                 is_z_xy=True, wait_xy=2.5, wait_z=2.0):
         """
         角度指定でアーム姿勢を設定
         
@@ -255,31 +271,31 @@ class RobotArm:
             if send_z_signal:
                 if self.sent_prev_z != z:
                     self.send_z(z * self.LL_SCALE)
-                    self.non_blocking_sleep(wait_z)
+                    time.sleep(wait_z)
             if send_xy:
                 if self.sent_prev_t1 != t1:
-                    self.set_t1((t1 - self.t1_initial) * self.L_SCALE)
-                    self.non_blocking_sleep(wait_xy)
+                    self.set_t1((t1 - self.t1_initial) * self.L1_SCALE)
+                    time.sleep(wait_xy)
                 if self.sent_prev_t2 != t2:
-                    self.set_t2((t2 - self.t2_initial) * self.L_SCALE)
-                    self.non_blocking_sleep(wait_xy)
+                    self.set_t2((t2 - self.t2_initial) * self.L2_SCALE)
+                    time.sleep(wait_xy)
         else:
             # XY先行
             if send_xy:
                 if self.sent_prev_t1 != t1:
-                    self.set_t1((t1 - self.t1_initial) * self.L_SCALE)
-                    self.non_blocking_sleep(wait_xy)
+                    self.set_t1((t1 - self.t1_initial) * self.L1_SCALE)
+                    time.sleep(wait_xy)
                 if self.sent_prev_t2 != t2:
-                    self.set_t2((t2 - self.t2_initial) * self.L_SCALE)
-                    self.non_blocking_sleep(wait_xy)
+                    self.set_t2((t2 - self.t2_initial) * self.L2_SCALE)
+                    time.sleep(wait_xy)
             if send_z_signal:
                 if self.sent_prev_z != z:
                     self.send_z(z * self.LL_SCALE)
-                    self.non_blocking_sleep(wait_z)
+                    time.sleep(wait_z)
         
         self.sent_prev_t1, self.sent_prev_t2, self.sent_prev_z = t1, t2, z
     
-    def move_to(self, x, y, z, should_grip, draw=True, wait_xy=1.5, wait_z=2.0):
+    def move_to(self, x, y, z, should_grip, draw=True, wait_xy=2.5, wait_z=2.0):
         """
         座標指定でアームを移動・グリップ
         
@@ -296,7 +312,8 @@ class RobotArm:
         except ValueError:
             print(f"到達不可能な座標: ({x}, {y})")
             return
-        
+
+        wait_xy = wait_xy+2.0*(max(abs(t1 - self.sent_prev_t1), abs(t2 - self.sent_prev_t2))/math.pi-0.5)
         self.get_distance()
         
         is_z_xy = (self.sent_prev_z == 0)
@@ -312,9 +329,9 @@ class RobotArm:
             self.is_gripping = False
         
         self.sent_prev_x, self.sent_prev_y = x, y
-        self.non_blocking_sleep(1.0)
+        time.sleep(1.0)
     
-    def move_to_angle(self, t1_deg, t2_deg, z, should_grip, draw=True, wait_xy=1.5, wait_z=2.0):
+    def move_to_angle(self, t1_deg, t2_deg, z, should_grip, draw=True, wait_xy=2.0, wait_z=2.0):
         """
         角度指定でアームを移動・グリップ
         
@@ -328,6 +345,8 @@ class RobotArm:
         """
         t1 = math.radians(t1_deg)
         t2 = math.radians(t2_deg)
+
+        wait_xy = wait_xy+2.0*(max(abs(t1 - self.sent_prev_t1), abs(t2 - self.sent_prev_t2))/math.pi-0.5)
         
         self.get_distance()
         
@@ -345,7 +364,7 @@ class RobotArm:
         
         _, (x1, y1), (x2, y2) = self.fk(t1, t2)
         self.sent_prev_x, self.sent_prev_y = x2, y2
-        self.non_blocking_sleep(1.0)
+        time.sleep(1.0)
     
     # ---- 初期化 ----
     def initialize(self, x0=0.5, y0=-0.5, z0=0.0):
@@ -356,31 +375,31 @@ class RobotArm:
         self.sent_prev_x, self.sent_prev_y = x0, y0
         
         self.draw_arm(self.t1_initial, self.t2_initial, x0, y0, z0)
-        self.non_blocking_sleep(1.0)
+        time.sleep(1.0)
     
     # ---- タスク実行 ----
-    def grab_at(self, position_num):
+    def grab_at(self, pos_key):
         """
         指定位置からオブジェクトをつかむ
         
         Args:
-            position_num: 位置番号 (1-5)
+            pos_key: 位置キー (e.g., 'pos_1', 'feeder')
         """
-        pos_key = f'pos_{position_num}'
+        # pos_key = f'pos_{position_num}'
         
         # 上から下へ移動してつかむ
         self.move_to_angle(*self.POSITIONS[pos_key], should_grip=False)
         self.move_to_angle(*self.POSITIONS_GRAB[pos_key], should_grip=True)
         self.move_to_angle(*self.POSITIONS[pos_key], should_grip=True)
     
-    def place_at(self, position_num):
+    def place_at(self, pos_key):
         """
         指定位置にオブジェクトを置く（離す）
         
         Args:
-            position_num: 位置番号 (1-5)
+            pos_key: 位置キー (e.g., 'pos_1', 'feeder')
         """
-        pos_key = f'pos_{position_num}'
+        # pos_key = f'pos_{position_num}'
         
         # 上から下へ移動して離す
         self.move_to_angle(*self.POSITIONS[pos_key], should_grip=True)
