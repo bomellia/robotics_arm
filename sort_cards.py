@@ -74,7 +74,10 @@ def main():
 
     # Initialize robot
     robot = RobotArm(port_xy="COM5", port_z="COM10")
-    robot.initialize()
+    robot.initialize(x0=0.5, y0=-0.5, z0=0.0)
+    robot.set_t1_speed(4.0)
+    robot.set_t2_speed(4.0)
+    robot.set_z_speed(4.0)
 
     try:
         # Read cards ONCE from file
