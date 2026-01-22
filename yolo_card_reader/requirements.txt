@@ -1,0 +1,13 @@
+# Flask web framework
+flask==3.0.0
+flask-cors==4.0.0
+pyopenssl==24.0.0
+
+# YOLO and computer vision
+ultralytics==8.3.0
+opencv-python==4.10.0.84
+numpy==1.26.4
+pillow==10.4.0
+
+# Image processing
+imutils==0.5.4
