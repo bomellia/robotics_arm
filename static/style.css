@@ -1,0 +1,21 @@
+body {
+  font-family: "Meiryo", sans-serif;
+  background: #f5f5f5;
+  text-align: center;
+}
+
+.bubble {
+  margin: 50px auto;
+  padding: 30px;
+  width: 420px;
+  background: #eef;
+  border-radius: 30px;
+  border: 2px solid #88a;
+  white-space: pre-line;
+  font-size: 16px;
+}
+
+.controls button {
+  margin: 10px;
+  padding: 10px 20px;
+}

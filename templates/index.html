@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Poker Robot</title>
+<style>
+body {
+    font-family: sans-serif;
+    background: #111;
+    color: #eee;
+}
+#chat {
+    border: 1px solid #444;
+    padding: 8px;
+    height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+.card {
+    display: inline-block;
+    border: 1px solid #666;
+    padding: 8px;
+    margin: 4px;
+    min-width: 40px;
+    text-align: center;
+}
+button {
+    margin: 4px;
+}
+</style>
+</head>
+
+<body>
+<h1>Poker Robot</h1>
+
+<button onclick="startGame()">ゲーム開始</button>
+<button onclick="toggleHand()">手札 表示/非表示</button>
+
+<h2>チャットログ</h2>
+<div id="chat"></div>
+
+<h2>現在の手札</h2>
+<div id="hand"></div>
+
+<h2>最終手札</h2>
+<div id="final"></div>
+
+<h2>役</h2>
+<div id="role"></div>
+
+<script>
+function startGame() {
+    fetch("/start");
+}
+
+function toggleHand() {
+    fetch("/toggle_hand");
+}
+
+function update() {
+    fetch("/status")
+        .then(r => r.json())
+        .then(d => {
+            // chat
+            const chat = document.getElementById("chat");
+            chat.innerHTML = "";
+            d.chat.forEach(m => {
+                const div = document.createElement("div");
+                div.textContent = m;
+                chat.appendChild(div);
+            });
+            chat.scrollTop = chat.scrollHeight;
+
+            // hand
+            const hand = document.getElementById("hand");
+            hand.innerHTML = "";
+            d.hand.forEach(c => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.textContent = c;
+                hand.appendChild(div);
+            });
+
+            // final
+            const final = document.getElementById("final");
+            final.innerHTML = "";
+            d.final_hand.forEach(c => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.textContent = c;
+                final.appendChild(div);
+            });
+
+            document.getElementById("role").textContent = d.role || "";
+        });
+}
+
+setInterval(update, 500);
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ sys.path.append(ROOT_DIR)
 from robot_arm_class import RobotArm
 
 # Path to the hand file written by the card reader server
-HAND_FILE = os.path.join(ROOT_DIR, 'ik', 'yolo_card_reader', 'latest_hand.json')
+HAND_FILE = os.path.join(ROOT_DIR, 'robotics_arm', 'yolo_card_reader', 'latest_hand.json')
 
 
 def get_hand():
