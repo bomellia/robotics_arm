@@ -21,7 +21,7 @@ from robot_arm_class import RobotArm
 
 HAND_FILE = os.path.join(
     ROOT_DIR,
-    'robotics_arm',
+    'ik',
     'yolo_card_reader',
     'latest_hand.json'
 )
@@ -46,6 +46,7 @@ class GameStatus:
         self.debug = False
         self.show_hand = False   # 追加
         self.running = False
+        self.last_pick = None
 
     def log(self, msg):
         self.chat.append(msg)
@@ -74,13 +75,16 @@ def status():
     # 最終手札は常に表示
     final_hand = STATUS.final_hand
 
+    STATUS.last_pick = get_latest_card() or STATUS.last_pick
+
     return jsonify({
         "state": STATUS.state,
         "hand": hand,
         "final_hand": final_hand,
         "role": STATUS.role,
         "chat": STATUS.chat,
-        "show_hand": STATUS.show_hand
+        "show_hand": STATUS.show_hand,
+        "last_pick": STATUS.last_pick
     })
 
 
@@ -131,7 +135,7 @@ def wait_for_card_in_feeder(robot, timeout_per_check=0.2, required_duration=5.0)
         if now - last_check >= 0.5:
             distance = robot.get_distance(timeout=timeout_per_check)
 
-            if distance is not None and distance <= 10:
+            if distance is not None and distance <= 11:
                 if start_time is None:
                     start_time = now
                 if now - start_time >= required_duration:
@@ -157,9 +161,9 @@ def place_card_at_position(robot, position_num):
 
 def discard_card(robot):
     STATUS.log("カードを捨てる")
-    robot.move_to(0.5, 0.0, 0, should_grip=True)
-    robot.move_to(0.5, 0.0, -8.7, should_grip=False)
-    robot.move_to(0.5, 0.0, 0, should_grip=False)
+    robot.move_to(0.5, -0.5, 0, should_grip=True)
+    robot.move_to(0.5, -0.5, 8.7, should_grip=False)
+    robot.move_to(0.5, -0.5, 0, should_grip=False)
 
 # ==============================
 # 役判定（元ロジック）
@@ -220,7 +224,7 @@ def decide_exchange_positions(hand, exchange_count):
         STATUS.log("ペアがあるのでそれ以外を交換しましょう")
     else:
         keep = [max(ranks)]
-        STATUS.log("最大ランク1枚を維持")
+        STATUS.log("バラバラなので4枚交換しましょう")
 
     return [i+1 for i,c in enumerate(hand) if c[0] not in keep]
 
@@ -252,11 +256,15 @@ def game_main():
 
         for i in range(1, 6):
             wait_for_card_in_feeder(robot)
+            card = STATUS.last_pick
+            STATUS.log(f"読み取ったカード(debug): {card}")
+
             fetch_card_from_feeder(robot)
-            card = get_latest_card() or (i * 2, 'C')
+            
             hand.append(card)
             place_card_at_position(robot, i)
             STATUS.hand = [str(c) for c in hand]
+            
             time.sleep(0.5)
 
         for exch in range(2):
@@ -271,8 +279,11 @@ def game_main():
                 robot.grab_at(f'pos_{p}')
                 discard_card(robot)
                 wait_for_card_in_feeder(robot)
+                card = STATUS.last_pick
+                STATUS.log(f"読み取ったカード(debug): {card}")
+
                 fetch_card_from_feeder(robot)
-                hand[p-1] = get_latest_card() or (0,'?')
+                hand[p-1] = card
                 place_card_at_position(robot, p)
                 STATUS.hand = [str(c) for c in hand]
                 time.sleep(0.5)
