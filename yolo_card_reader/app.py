@@ -239,10 +239,10 @@ if __name__ == '__main__':
         # Run Flask app with HTTPS
         print("Starting server on https://0.0.0.0:5000")
         print("Note: You'll need to accept the self-signed certificate warning in your browser")
-        app.run(host='0.0.0.0', port=5000, debug=True, threaded=True,
+        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True,
                 ssl_context=(cert_file, key_file))
     else:
         # Run Flask app without HTTPS
         print("Starting server on http://0.0.0.0:5000")
         print("Warning: Camera access requires HTTPS on mobile devices. Use --https flag for mobile access.")
-        app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

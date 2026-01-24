@@ -169,22 +169,56 @@ def discard_card(robot):
 # 役判定（元ロジック）
 # ==============================
 
+# def evaluate_hand(hand):
+#     ranks = [c[0] for c in hand]
+#     suits = [c[1] for c in hand]
+#     count = Counter(ranks).values()
+
+#     flush = len(set(suits)) == 1
+#     straight = max(ranks) - min(ranks) == 4 and len(set(ranks)) == 5
+
+#     if straight and flush: return "straight_flush"
+#     if 4 in count: return "four"
+#     if 3 in count and 2 in count: return "full_house"
+#     if flush: return "flush"
+#     if straight: return "straight"
+#     if 3 in count: return "three"
+#     if list(count).count(2) == 2: return "two_pair"
+#     if 2 in count: return "one_pair"
+#     return "high_card"
+
 def evaluate_hand(hand):
-    ranks = [c[0] for c in hand]
-    suits = [c[1] for c in hand]
-    count = Counter(ranks).values()
-
-    flush = len(set(suits)) == 1
-    straight = max(ranks) - min(ranks) == 4 and len(set(ranks)) == 5
-
-    if straight and flush: return "straight_flush"
-    if 4 in count: return "four"
-    if 3 in count and 2 in count: return "full_house"
-    if flush: return "flush"
-    if straight: return "straight"
-    if 3 in count: return "three"
-    if list(count).count(2) == 2: return "two_pair"
-    if 2 in count: return "one_pair"
+    ranks = [card[0] for card in hand]
+    suits = [card[1] for card in hand]
+ 
+    rank_count = Counter(ranks)
+    counts = sorted(rank_count.values(), reverse=True)
+ 
+    is_flush = len(set(suits)) == 1
+    sorted_ranks = sorted(set(ranks))
+    is_straight = (
+        len(sorted_ranks) == 5 and
+        max(sorted_ranks) - min(sorted_ranks) == 4
+    )
+ 
+    if is_straight and is_flush:
+        if sorted_ranks == [10, 11, 12, 13, 14]:
+            return "royal_flush"
+        return "straight_flush"
+    if counts[0] == 4:
+        return "four"
+    if counts[0] == 3 and counts[1] == 2:
+        return "full_house"
+    if is_flush:
+        return "flush"
+    if is_straight:
+        return "straight"
+    if counts[0] == 3:
+        return "three"
+    if counts[0] == 2 and counts[1] == 2:
+        return "two_pair"
+    if counts[0] == 2:
+        return "one_pair"
     return "high_card"
 
 ROLE_MSG = {
@@ -202,6 +236,37 @@ ROLE_MSG = {
 # ==============================
 # 交換判断（元ロジック）
 # ==============================
+
+def shake_hand(robot, speed, angle):
+    robot.move_to_angle(*robot.POSITIONS['home'], should_grip=False)
+    robot.set_z_speed(speed)
+    for i in range(5):
+        robot.move_to(0.5,-0.5, angle, should_grip=False)
+        robot.move_to(0.5,-0.5, -angle, should_grip=False)
+    robot.set_z_speed(4)
+
+def reaction(roll, robot):
+    if roll in ("straight_flush", "four", "full_house"):
+
+        shake_hand(robot, 4, 8)
+
+    elif roll in ("flush", "straight"):
+
+        shake_hand(robot, 3, 6)
+
+    elif roll in ("three", "two_pair"):
+
+        shake_hand(robot, 2, 4)
+
+    elif roll == "one_pair":
+
+        shake_hand(robot, 1, 2)
+
+    else:
+        robot.set_z_speed(6)
+        robot.move_to_angle(*robot.POSITIONS['home'], should_grip=False)
+        robot.move_to(0.5, -0.5, -8.7, should_grip=False)
+        robot.set_z_speed(4)
 
 def decide_exchange_positions(hand, exchange_count):
     hand_type = evaluate_hand(hand)
@@ -289,10 +354,12 @@ def game_main():
                 time.sleep(0.5)
 
         role = evaluate_hand(hand)
+        
         STATUS.final_hand = [str(c) for c in hand]
         STATUS.role = ROLE_MSG[role]
         STATUS.state = "END"
         STATUS.log(f"ゲーム終了：{ROLE_MSG[role]}")
+        reaction(role,robot)
 
         robot.move_to_angle(*robot.POSITIONS['home'], should_grip=False)
 

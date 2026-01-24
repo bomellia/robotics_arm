@@ -59,6 +59,13 @@ def pick_and_place(robot):
     
     print("ピック&プレイス完了")
 
+def pp2(robot,speed,angle):
+    robot.set_z_speed(speed)
+    for i in range(5):
+        robot.move_to(0.5,-0.5, angle, should_grip=False)
+        robot.move_to(0.5,-0.5, -angle, should_grip=False)
+    robot.set_z_speed(4)
+
 def main():
     """メイン処理"""
     # ロボットアーム初期化
@@ -75,7 +82,8 @@ def main():
     
     try:
         # ピック&プレイス実行
-        pick_and_place(robot)
+        # pick_and_place(robot)
+        pp2(robot, 4, 8)
     except KeyboardInterrupt:
         print("\n中断しました")
     finally:
